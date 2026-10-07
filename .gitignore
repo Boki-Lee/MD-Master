@@ -1,0 +1,30 @@
+# ===== NAMD / MD 运行产物（体积大，不入库）=====
+*.dcd
+*.coor
+*.vel
+*.xst
+*.xsc
+*.restart
+*.restart.*
+*.old
+*.BAK
+*.backup
+
+# 大日志（只保留小日志样例）
+*.log
+!system_solv.log
+
+# 临时 / 备份
+*~
+*.swp
+*.tmp
+_tmp/
+_output/
+__pycache__/
+*.pyc
+
+# 本机配置
+.DS_Store
+
+# 打包产物（上传前请自行取出，勿一并提交）
+MD-Master.zip

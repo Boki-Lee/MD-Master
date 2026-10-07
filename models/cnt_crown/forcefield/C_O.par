@@ -1,0 +1,29 @@
+! ---------- Bond parameters ----------
+!  atom_type1  atom_type2   Kb(kcal/mol/A^2)   r0(Angstrom)
+BOND
+  CA   OX   360.00   1.430
+END
+
+! ---------- Angle parameters ----------
+!  atom_type1  atom_type2  atom_type3   Ktheta(kcal/mol/rad^2)   theta0(deg)
+ANGLE
+  CA   OX   CA    55.0   110.5
+END
+
+! ---------- Dihedral parameters (example multi-term) ----------
+!  atom1 atom2 atom3 atom4  K (kcal/mol)  n  phi0(deg)
+DIHEDRAL
+  OX   CA  OX  CA   0.30  3  0.0
+  OX   CA  OX  CA   0.25  2  180.0
+END
+
+! ---------- Improper parameters ----------
+!  atom1 atom2 atom3 atom4   Kpsi(kcal/mol/rad^2)   n   psi0(deg)
+IMPROPER
+  CA   CA   CA   CA    0.0    0    0.0   ! CNT sp2 carbon, planar by bonds/angles
+END
+
+! ---------- LJ / Nonbond (example ATOMTYPE block style) ----------
+!  type   mass    Rmin/2(A)    epsilon(kcal/mol)
+ATOM  OX  15.999  1.7510   0.1700
+ATOM  CA    12.011  1.9924   0.0700

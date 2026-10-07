@@ -1,0 +1,23 @@
+# SMD 拉伸 colvars 模板
+# @ION@ / @OX@ 会被 run_smd.sh 用 build 产物（ion_index.dat / ox_indices.dat）替换
+colvarsTrajFrequency 500
+colvarsRestartFrequency 5000
+
+# 反应坐标：K⁺ 相对目标孔（6 个冠醚氧）的 Z 方向距离（孔心=0，管外为正，管内为负）
+colvar {
+  name z_dist
+  distanceZ {
+    main { atomNumbers { @ION@ } }
+    ref  { atomNumbers { @OX@ } }
+  }
+}
+
+# SMD：把 z_dist 从 +12（管外体相）匀速拉到 -6（管内）
+harmonic {
+  name pull_z
+  colvars z_dist
+  forceConstant 250.0     # kcal/mol/A^2，强弹簧拉过脱水势垒（可调）
+  centers 12.0
+  targetCenters -6.0
+  targetNumSteps 1000000
+}
