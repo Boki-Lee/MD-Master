@@ -3,7 +3,7 @@
 colvarsTrajFrequency 500
 colvarsRestartFrequency 5000
 
-# 反应坐标：K⁺ 相对目标孔（6 个冠醚氧）的 Z 方向距离（孔心=0，管外为正，管内为负）
+# 反应坐标：目标离子相对目标孔（6 个冠醚氧）的 Z 方向距离（孔心=0，管外为正，管内为负）
 colvar {
   name z_dist
   distanceZ {
@@ -13,6 +13,11 @@ colvar {
 }
 
 # SMD：把 z_dist 从 +12（管外体相）匀速拉到 -6（管内）
+# ⚠️ centers / targetCenters 必须【覆盖 us/windows.txt 里窗口的整个 z 范围】，
+#    两端各留 1 Å 余量，否则提取窗口构象时会找不到对应的帧。
+#    默认给的是宽量程 12 -> -6，能覆盖窄量程（±5 Å）那份窗口清单，
+#    只是 SMD 会多跑一段用不到的路程（1 ns 量级，可忽略）；
+#    若确定只用窄量程，改成 centers 6.0 / targetCenters -6.0 可以省一半时间。
 harmonic {
   name pull_z
   colvars z_dist

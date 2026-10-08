@@ -121,7 +121,7 @@ forcefield/  力场参数（6 个，已复制）
 2min/        ③ 最小化   min.conf（建模后照 models/cnt_crown/2min 填）
 3eq/         ④ 平衡     eq.conf（续算 ../2min/min）
 4prod/       ⑤ 生产     prod.conf + 力脚本（选做，加 --with-prod）
-smd~pmf/     ⑤' 自由能  SMD→提取→伞形采样→WHAM（选做，加 --with-free-energy）
+smd~pmf/     ⑤' 自由能  平衡→SMD拉伸→提取→伞形采样→WHAM（选做，加 --with-free-energy）
 analysis/    ⑥ 分析     calCurr.sh / plot_*.py（选做，加 --with-analysis）
 ```
 

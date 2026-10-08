@@ -20,6 +20,11 @@ MD-Master/
 ├── new_project.sh            ★ 一键搭新项目骨架（--with-prod / --with-free-energy / --with-analysis）
 ├── archive_model.sh          ★ 归档辅助：把跑完的项目复制成新模型（排除大轨迹）
 │
+├── logs/                     ★ 变更日志：入库/改库一律追加一条（带时间戳，只增不改）
+│   ├── CHANGELOG.md          变更日志本体（最新条目在文末）
+│   ├── log_change.sh         追加日志的辅助脚本（时间戳自动生成）
+│   └── README.md             日志规则 + 格式 + 自检清单
+│
 ├── forcefield/               力场母版（复制给每个模型用）
 │   ├── C_O.par               冠醚关键：定义 CA-OX 键/角参数（★冠醚氧类型必须是 OX）
 │   ├── par_all36_prot.prm / par_all36_lipid.prm / par_all36_na.prm   CHARMM36 蛋白质/脂/核酸参数
@@ -52,9 +57,10 @@ MD-Master/
 │
 ├── free_energy/              步骤5：自由能模板（US/SMD+WHAM）
 │   ├── README.md             全链说明 + "只改几处"清单
-│   ├── smd/     smd.conf + smd.colvars.in + run_smd.sh       SMD 拉伸
+│   ├── smd/     eq.conf（minimize+1ns 平衡）+ smd.conf + smd.colvars.in + run_smd.sh   SMD 拉伸
 │   ├── extract/ extract.tcl + run_extract.sh                 提取窗口构象
 │   ├── us/      template.conf + windows.txt + setup_us.sh + run_all.sh   伞形采样
+│   │            （另附 windows_bulk_to_tube.txt = 宽量程 47 窗口方案）
 │   └── pmf/     wham.py + run_wham.sh + plot_pmf.py          WHAM + 绘图
 │
 └── analysis/                 步骤6：提取数据 + 绘图脚本库
@@ -107,11 +113,14 @@ bash new_project.sh /mnt/data2/.../新项目 --with-prod --with-analysis
 
 ---
 
-## 四、两条铁律
+## 四、三条铁律
 
 1. **NAMD 由你在终端启动**：我只负责写 conf、跑静态校验、把命令写好交给你；正式长跑你自己敲。
    我可在你授权后做几秒冒烟测试验证能否启动。
 2. **每步双重确认**：0→1→2→3→(4|5)→6，每步完成后问一次、你通过后我校验再问一次，
    你两次都说"通过"才继续下一步（见 `AGENTS.md`）。
+3. **改库必记日志**：归档入库、或你直接让我改库（增删改任何文件/目录），
+   一律往 `logs/CHANGELOG.md` 追加一条带时间戳的记录，只增不改（见 `AGENTS.md` §6）。
 
-> 详细流程、坑与排错见 `WORKFLOW.md`；交互协议见 `AGENTS.md`。
+> 详细流程、坑与排错见 `WORKFLOW.md`；交互协议见 `AGENTS.md`；归档流程见 `ARCHIVE.md`；
+> 变更台账见 `logs/CHANGELOG.md`。

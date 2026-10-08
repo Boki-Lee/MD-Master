@@ -13,7 +13,7 @@ fi
 
 ION=$(cat ../1model/ion_index.dat)
 OX=$(cat ../1model/ox_indices.dat)
-echo ">> K⁺ index=$ION   目标孔 O indices: $OX"
+echo ">> ion index=$ION   target pore O indices: $OX"
 
 count=0
 while read -r z k; do

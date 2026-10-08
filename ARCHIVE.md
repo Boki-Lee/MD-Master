@@ -8,7 +8,7 @@
 
 ---
 
-## 一、归档流程（6 步）
+## 一、归档流程（7 步）
 
 ### 第 1 步：问清楚存什么（分类，必问）
 
@@ -45,7 +45,23 @@
 - 跑对应校验：`check_setup.py` / `check_setup_us.py` / `tclsh selftest_field.tcl` / 语法检查。
 - grep 确认无大轨迹、无旧目录引用残留。
 
-### 第 6 步：停一下让用户确认（同样双重确认：两次通过才收尾），再收尾。
+### 第 6 步：停一下让用户确认（同样双重确认：两次通过才收尾）。
+
+### 第 7 步：写变更日志（收尾必做，不可省）
+
+- 用户第二次"通过"后，**立刻**往 `logs/CHANGELOG.md` 追加一条带时间戳的记录：
+
+```bash
+cd <本 skill 根目录>
+bash logs/log_change.sh 归档 "<一句话摘要，例：CNT1 收成 models/cnt_crown_v2>" \
+     --files "<本次新增/修改的所有库内文件，逗号分隔>" \
+     --source "<来源项目路径>" \
+     --note "<关键说明：改了什么路径/未收哪些大文件>"
+```
+
+- 时间戳由脚本自动生成（`YYYY-MM-DD HH:MM:SS +0800`），不要手写。
+- `logs/CHANGELOG.md` **只增不改**；写错了追加一条「更正」，不删旧条目。
+- 规则出处：`AGENTS.md` §6；格式与自检清单：`logs/README.md`。
 
 ---
 
@@ -62,6 +78,7 @@
 | **自由能改动** `free_energy/<sub>/` | ① `free_energy/README.md`；② 顶层 `README.md` 的 `free_energy/` 条目；③ `new_project.sh` 第 84 行子目录列表（新增子目录才改） |
 | **新力场参数** `forcefield/xxx` | ① 顶层 `README.md` 的 `forcefield/` 条目；② 相关模型 README/conf 的 `parameters` 引用（如需） |
 | **新踩坑/经验** | ① `WORKFLOW.md` 对应章节（§8 坑 / §9 物理 / §10 排错 / §11 命令）；② 通用经验同步到全局 `~/.dsh/AGENTS.md` §踩坑 |
+| **任何入库动作（收尾）** | 追加 `logs/CHANGELOG.md` 一条：类型=`归档`、摘要、来源项目、改动文件清单（见第 7 步）。**不改联动点也必须写这一条。** |
 
 ---
 
@@ -75,6 +92,7 @@
 4. 第 4 步 → 顶层 `README.md` 的 `forces/` 条目加一行；`new_project.sh` 无需改（`*.tcl` 通配）。
 5. 第 5 步 → `chmod 644`（.tcl 由 namd3 读，不需执行位）；`tclsh` 跑 selftest。
 6. 第 6 步 → 确认。
+7. 第 7 步 → `bash logs/log_change.sh 归档 "..." --files "forces/field_xxx.tcl,forces/README.md,README.md" --source /mnt/data2/lbj/CNT/CNT1`。
 
 ### 例 2：归档一个跑完的项目为新模型
 
@@ -85,6 +103,7 @@
 4. 第 4 步 → 顶层 `README.md` 索引加 `models/<name>/` 条目；如引入了新建模脚本，更新 `new_project.sh` 清单。
 5. 第 5 步 → `python3 0build/check_setup.py`；grep 无大轨迹。
 6. 第 6 步 → 确认。
+7. 第 7 步 → `bash logs/log_change.sh 归档 "..." --files "models/<name>/README.md,README.md" --source <项目路径>`。
 
 > 机械复制可用 `archive_model.sh`（见下）代劳，跑完它打印"还需手动改"清单兜底。
 

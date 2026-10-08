@@ -18,15 +18,20 @@ def main():
     ap.add_argument("pmf", nargs="?", default="pmf.txt")
     ap.add_argument("-o", "--out", default="pmf.png")
     ap.add_argument("--title", default="PMF of K+ through CNT crown-ether pore")
+    ap.add_argument("--bulk-z", type=float, default=12.0,
+                    help="体相参考点的 z（Å），取离它最近的 bin。默认 12.0（宽量程方案的外侧平台）。"
+                         "用默认的窄量程 ±5 Å 窗口清单时不用改：12.0 会落到最正的那个 bin（≈+5.4），"
+                         "正是管外一端。想让两个体系严格对齐时才显式指定。")
     args = ap.parse_args()
 
     d = np.loadtxt(args.pmf)
     z, pmf = d[:, 0], d[:, 1]
 
-    # 去掉 nan（窗口间采样空隙），并以体相 z≈+12 为参考零点
+    # 去掉 nan（窗口间采样空隙），再把体相参考点定为零点
+    # 注意：这个参考点会整体平移 PMF，改它等于改势垒高度，对齐两个体系时要一致
     valid = ~np.isnan(pmf)
     z, pmf = z[valid], pmf[valid]
-    bulk_ref = pmf[np.argmin(np.abs(z - 12.0))]
+    bulk_ref = pmf[np.argmin(np.abs(z - args.bulk_z))]
     pmf = pmf - bulk_ref
 
     fig, ax = plt.subplots(figsize=(7, 5))
