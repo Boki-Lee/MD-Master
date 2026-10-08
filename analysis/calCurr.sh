@@ -6,7 +6,7 @@
 #  轴向电流 I_z 与径向电流 I_r(rs) 的定义见 ion-cur.tcl 头部注释。
 #
 #  用法（在 analysis/ 目录下执行）：
-#      bash calCurr.sh                              # 默认 16 进程、10000 帧、柱面 9/15.58/22 Å
+#      bash calCurr.sh                              # 进程数默认读 machine.conf 的 ANALYSIS_JOBS
 #      bash calCurr.sh 16 10000                     # 指定进程数与总帧数
 #      bash calCurr.sh 16 10000 "9.0 15.58 22.0"    # 指定径向统计柱面（Å）
 #
@@ -22,7 +22,18 @@
 #      radial_shells.txt 柱面半径清单（对应 AcurrRadial.dat 的列）
 # ============================================================
 
-core=${1:-16}
+# ---- 机器自适应配置（首次使用：bash bench_namd.sh）----
+CONF="${MD_MASTER_MACHINE_CONF:-${XDG_CONFIG_HOME:-$HOME/.config}/md-master/machine.conf}"
+if [ -r "$CONF" ]; then
+    . "$CONF"
+else
+    echo "⚠ 未找到机器配置 $CONF —— 首次使用请先跑 bash bench_namd.sh（本次用保守默认值）" >&2
+    [ "${MD_MASTER_STRICT:-0}" = "1" ] && { echo "MD_MASTER_STRICT=1，退出"; exit 1; }
+fi
+VMD="${VMD:-$(command -v vmd || true)}"
+[ -n "$VMD" ] || { echo "ERROR: 找不到 vmd（设 VMD=/path/to/vmd，或先跑 bench_namd.sh）" >&2; exit 1; }
+
+core=${1:-${ANALYSIS_JOBS:-4}}
 frames=${2:-10000}
 shells=${3:-"9.0 15.58 22.0"}
 
@@ -52,7 +63,7 @@ echo ""
 echo "启动 $core 个并行 VMD 任务（每段 $dframes 帧，径向柱面: $shells Å）..."
 
 for ((i = 0; i < core; i++)); do
-    vmd -dispdev none -e temp-ion-cur_$i.tcl &
+    "$VMD" -dispdev none -e temp-ion-cur_$i.tcl &
 done
 
 # ---- 等待所有任务完成（靠 finish_<i>.txt 标记）----
@@ -99,7 +110,6 @@ echo ""
 echo "电流计算完成。输出文件："
 ls -la Acurr*.dat radial_shells.txt 2>/dev/null
 echo ""
-echo "下一步："
-echo "  conda activate MD"
+echo "下一步（分析用 Python 环境按机器改，例如 conda activate MD）："
 echo "  python plot_iv.py            # 径向 I_r-V_rad 回线 + 轴向直流工作点"
 echo "  python plot_currents.py      # 电流分物种/分区的时间序列"

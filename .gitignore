@@ -28,3 +28,8 @@ __pycache__/
 
 # 打包产物（上传前请自行取出，勿一并提交）
 MD-Master.zip
+*.zip
+
+# 机器记忆（真身在 ~/.config/md-master/machine.conf，属于本机，不要提交）
+machine.conf
+machine.conf.bak-*

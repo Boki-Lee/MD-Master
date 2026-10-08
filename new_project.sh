@@ -11,6 +11,9 @@
 #
 #  参考库来源：本脚本所在目录（本 skill 根目录）
 #
+#  提示：新项目第一次跑 NAMD 前，先在新项目里 `bash bench_namd.sh`（脚本已一并复制过去）——
+#        它会实测本机最优的线程数/是否绑核/并发路数并写进全局记忆，之后所有脚本自动读。
+#
 #  做的事：
 #      1. 建骨架 forcefield/ 0build/ 1model/ 2min/ 3eq/
 #      2. 复制力场 6 文件 + 标准建模脚本（build_cnt_crown.tcl 等，改头参数即可）
@@ -59,9 +62,11 @@ echo
 mkdir -p "$DEST"/{forcefield,0build,1model,2min,3eq}
 echo "  [1/6] 骨架已建（forcefield/ 0build/ 1model/ 2min/ 3eq/）"
 
-# ---- 2) 力场 ----
+# ---- 2) 力场 + 机器自检脚本 ----
 cp -n "$REF"/forcefield/* "$DEST/forcefield/"
-echo "  [2/6] 力场 6 文件已复制"
+cp -n "$REF"/bench_namd.sh "$REF"/machine.conf.example "$DEST/" 2>/dev/null || true
+chmod +x "$DEST/bench_namd.sh" 2>/dev/null || true
+echo "  [2/6] 力场 6 文件已复制（+ 机器自检脚本 bench_namd.sh）"
 
 # ---- 3) 标准建模脚本（照抄示例模型，改头参数）----
 for f in build_cnt_crown.tcl run_build.sh check_setup.py make_bfactor_pdbs.tcl; do
@@ -155,10 +160,12 @@ cat > "$DEST/TODO.md" <<'EOF'
 
 - [ ] `2min/min.conf`：`structure/coordinates`→`../1model/system_ion.*`；
       `cellBasisVector*`=盒子边长；**`cellOrigin`=盒子中心**（不是角点！）；`langevinFile`/`consref`→`../1model/cnt_*.pdb`
+- [ ] **先做机器自检**：`bash bench_namd.sh`（首次一次即可，结果全局记忆；重测用 `--retest`）
 - [ ] `python3 0build/check_setup.py` 静态校验全 PASS 再跑
-- [ ] `cd 2min && namd3 +p32 +setcpuaffinity +devices 0 min.conf > min.log 2>&1`
+- [ ] `cd 2min && $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES min.conf > min.log 2>&1`
+      （参数来自 machine.conf；抄现成命令：`bash bench_namd.sh --print single`）
 - [ ] `grep "PERIODIC CELL CENTER" min.log` 确认盒子中心对
-- [ ] `cd ../3eq && namd3 +p32 +setcpuaffinity +devices 0 eq.conf > eq.log 2>&1`
+- [ ] `cd ../3eq && $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES eq.conf > eq.log 2>&1`
 
 ## 三、分支：步骤4 生产模拟 或 步骤5 自由能（二选一）
 
@@ -166,7 +173,7 @@ cat > "$DEST/TODO.md" <<'EOF'
 - [ ] 挑一个 `4prod/` 里的力脚本，在 `prod.conf` 写 `tclForces on` + `tclForcesScript`
 - [ ] `prod.conf` 续算 `../3eq/eq`；**不要写 CUDASOAintegrate、不要写 stepsPerCycle**
 - [ ] 改完先离线自检：`tclsh 4prod/selftest_field.tcl ../3eq/eq.restart.xsc`
-- [ ] `cd 4prod && nohup namd3 +p32 +setcpuaffinity +devices 0 prod.conf > prod.log 2>&1 &`
+- [ ] `cd 4prod && nohup $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES prod.conf > prod.log 2>&1 &`
 
 ### 5 自由能（US/SMD+WHAM）
 - [ ] `0build/run_build_us.sh`（--ion POT/CAL/SOD、--zmax/--zmin 等）生成 US 体系进 `1model/`
@@ -178,14 +185,14 @@ cat > "$DEST/TODO.md" <<'EOF'
 ## 四、分析（步骤6，每次按目标单独确认算什么）
 
 - [ ] 改 `analysis/field_protocol.py` 顶部协议参数（AXIAL_MODE/V_*/SHELL_RADII/TUBE_R）
-- [ ] `bash analysis/calCurr.sh 2 100` 试跑，再 `nohup bash analysis/calCurr.sh 16 10000 &`
-- [ ] `conda activate MD` 后跑 `plot_iv.py` / `plot_currents.py` / `plot_concentration.py`
+- [ ] `bash analysis/calCurr.sh 2 100` 试跑，再 `nohup bash analysis/calCurr.sh "${ANALYSIS_JOBS:-8}" 10000 &`
+- [ ] 激活分析用的 Python 环境（示例 `conda activate MD`）后跑 `plot_iv.py` / `plot_currents.py` / `plot_concentration.py`
 
 ## 五、别忘了（物理陷阱）
 
 - [ ] 总电流里管外是并联通路，测通道输运要用"管内/柱心"分量
 - [ ] 管壁两侧各有约 5 Å 离子排斥层，算浓度用柱心对远处本体
-- [ ] 数据盘 /mnt/data2 偏满，大轨迹记得清理
+- [ ] 轨迹文件（dcd）很占地方，跑完记得清理或转存
 EOF
 echo "  TODO.md 已生成"
 

@@ -19,6 +19,9 @@ MD-Master/
 ├── ARCHIVE.md                ★ 项目结束后「存入参考库」的归档流程 + 联动清单
 ├── new_project.sh            ★ 一键搭新项目骨架（--with-prod / --with-free-energy / --with-analysis）
 ├── archive_model.sh          ★ 归档辅助：把跑完的项目复制成新模型（排除大轨迹）
+├── bench_namd.sh             ★ 首次使用必跑：实测本机最优 NAMD 参数（线程/绑核/并发）→ 全局记忆
+├── machine.conf.example      全局机器记忆的样例与全部键说明（真实文件在 ~/.config/md-master/）
+├── VERSION / LICENSE         版本号 / MIT 许可证
 │
 ├── logs/                     ★ 变更日志：入库/改库一律追加一条（带时间戳，只增不改）
 │   ├── CHANGELOG.md          变更日志本体（最新条目在文末）
@@ -93,11 +96,21 @@ MD-Master/
 
 ## 三、怎么用
 
+### 零、第一次用：先让技能认识这台机器（只做一次）
+
+```bash
+bash bench_namd.sh            # 实测本机最优 NAMD 参数 → 写进 ~/.config/md-master/machine.conf
+bash bench_namd.sh --show     # 看结果与推荐命令；--retest 重测；--env 只看环境探测
+```
+
+测过之后所有脚本自动读这份**全局记忆**，不用每次再测；换机器或换驱动时 `--retest`。
+没自检也能跑（脚本给出保守默认值 + 醒目提示），但并行参数大概率不是最优。
+
 ### 新建一个模型/项目
 
 ```bash
-bash new_project.sh /mnt/data2/.../新项目 --with-prod --with-analysis
-# 或跑自由能：bash new_project.sh /mnt/data2/.../新项目 --with-free-energy
+bash new_project.sh /path/to/新项目 --with-prod --with-analysis
+# 或跑自由能：bash new_project.sh /path/to/新项目 --with-free-energy
 ```
 
 生成骨架 + 力场 + 建模脚本 + `README.md` + `TODO.md`，然后按 `TODO.md` 走。
@@ -121,6 +134,18 @@ bash new_project.sh /mnt/data2/.../新项目 --with-prod --with-analysis
    你两次都说"通过"才继续下一步（见 `AGENTS.md`）。
 3. **改库必记日志**：归档入库、或你直接让我改库（增删改任何文件/目录），
    一律往 `logs/CHANGELOG.md` 追加一条带时间戳的记录，只增不改（见 `AGENTS.md` §6）。
+4. **并行参数不写死**：`+p` / `+setcpuaffinity` / 并发路数一律读全局机器记忆
+   （`~/.config/md-master/machine.conf`）；首次用 `bench_namd.sh` 实测，机器变了 `--retest`。
 
 > 详细流程、坑与排错见 `WORKFLOW.md`；交互协议见 `AGENTS.md`；归档流程见 `ARCHIVE.md`；
 > 变更台账见 `logs/CHANGELOG.md`。
+
+---
+
+## 五、安装与许可
+
+- **安装**：把整个目录放进运行时能识别的 skills 目录（或直接把本目录交给支持 `SKILL.md`
+  的 agent）。脚本全部用 `$0` 相对定位，**搬到任何位置都能用**，不依赖固定绝对路径。
+- **首次使用**：`bash bench_namd.sh`（见「三、怎么用 → 零」）。
+- **许可**：MIT，见 `LICENSE`。示例模型与力场参数沿用 CHARMM36 及其原始条款。
+- **版本**：见 `VERSION`；每次发行说明见 GitHub Release。

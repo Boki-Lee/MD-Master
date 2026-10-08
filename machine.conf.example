@@ -1,0 +1,46 @@
+# ============================================================
+#  machine.conf.example —— 全局机器记忆（MD-Master）
+#
+#  真实文件由 `bash bench_namd.sh` 自动生成在：
+#      ~/.config/md-master/machine.conf
+#  （可用环境变量 MD_MASTER_MACHINE_CONF 指到别处）
+#
+#  为什么放这个位置：它是**本机专属**的 —— 不属于仓库，也不属于某个项目。
+#  换项目、换工作目录都还是同一台机器，所以放用户级全局配置，全库脚本一起读。
+#
+#  脚本里的读法（各脚本头部就是这个片段）：
+#      CONF="${MD_MASTER_MACHINE_CONF:-${XDG_CONFIG_HOME:-$HOME/.config}/md-master/machine.conf}"
+#      [ -r "$CONF" ] && . "$CONF"
+#      NTHREADS="${NTHREADS:-${SINGLE_NTHREADS:-8}}"
+#      AFFINITY="${AFFINITY:-${SINGLE_AFFINITY:-}}"
+#
+#  ★ 不要手改：并行参数都是**实测**出来的，手改只会变慢。要改就重测：
+#      bash bench_namd.sh --retest
+# ============================================================
+
+# ---- 这台机器是谁（bench_namd.sh 探测 + 实测写入）----
+# ★ 含空格/括号的取值一定加引号：这个文件会被 bash `source`，
+#   不加引号会把 CPU 型号、日期这些内容当命令执行。
+MACHINE_ID="your-hostname"
+BENCH_DATE="2026-01-01 00:00:00 +0800"
+BENCH_ATOMS=23045
+CPU_MODEL="Intel(R) Xeon(R) Gold 6230R CPU @ 2.10GHz"
+CPU_CORES=104
+MEM_GB=63
+GPU_OK=1
+GPU_NAME="NVIDIA GeForce RTX 4090 24564 MiB 560.35.03"
+
+# ---- 可执行文件位置（用 := 形式：环境变量仍可覆盖）----
+: "${NAMD:="/path/to/namd3"}"
+: "${VMD:="/path/to/vmd"}"
+: "${PYTHON:="/path/to/python"}"     # 需要能 import numpy（分析与 WHAM 用）
+: "${DEVICES:=0}"                    # 用第几块 GPU
+
+# ---- 实测最优参数（★ 全库脚本读的就是这几项）----
+SINGLE_NTHREADS=32                   # 单进程顺序跑（min/eq/prod/smd）的 +p 线程数
+SINGLE_AFFINITY="+setcpuaffinity"    # 单进程要不要绑核；实测没收益就留空 ""
+SINGLE_NS_PER_DAY=115.8              # 单进程实测吞吐（仅参考）
+CONC_MAX_JOBS=3                      # US 多窗口并发路数（并发一律不绑核）
+CONC_NTHREADS=16                     # 并发时每个窗口的 +p
+CONC_NS_PER_DAY=2032.0               # 并发合计吞吐（仅参考）
+ANALYSIS_JOBS=8                      # 分析脚本并行 VMD 数（按内存缩放）

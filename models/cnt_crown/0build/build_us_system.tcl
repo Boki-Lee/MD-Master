@@ -13,7 +13,7 @@
 #
 #  核心技巧：把目标冠醚孔旋转到「孔轴 = +Z、孔心 = 原点」。
 #       这样离子径向穿过孔的坐标就退化成 z，后面 SMD/US 的 colvars 直接用
-#       distanceZ（与石墨烯孔参考 /mnt/share/free energy-Ca 一模一样）。
+#       distanceZ（与外部石墨烯孔参考项目一致）。
 #
 #  输出（写进 ../1model/ 或 $OUTDIR）：
 #      rotated.psf/pdb         旋转后（孔轴=Z、孔心=原点）的 CNT+冠醚

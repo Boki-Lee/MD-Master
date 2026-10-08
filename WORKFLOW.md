@@ -5,28 +5,53 @@
 
 ---
 
-## 0. 环境（一次性，本机已配好）
+## 0. 环境与首次自检（★ 第一次用这套 skill 先看这里）
 
-| 软件 | 路径 |
-|---|---|
-| VMD | `/usr/local/bin/vmd`（1.9.4a57，插件在 `/usr/local/lib/vmd/plugins/noarch/tcl/`） |
-| NAMD 3.0.1 | `/home/dell/Install/Namd/NAMD_3.0.1_Linux-x86_64-multicore-CUDA/namd3`（**推荐**） |
-| NAMD 2.14 | 同目录下 `NAMD_2.14_.../namd2`（备用） |
-| conda | `/home/dell/anaconda3`（分析用 `MD` 环境） |
+### 0.1 一次性自检：先让技能认识这台机器
+
+**NAMD 的线程数、要不要绑核、能开几路并发，全是机器相关的。** 文档里出现的具体数字
+（`+p32`、`3 并发 × +p16` 之类）只是开发机（52 核 Xeon + RTX 4090）的实测值 ——
+照抄到别的机器可能慢十倍，甚至因为绑核把多进程全钉到 CPU0 而假死。所以：
 
 ```bash
-conda activate MD              # 做分析/绘图用它
+bash bench_namd.sh                   # ★ 首次使用跑一次（约 1~3 分钟），实测本机最优参数
+bash bench_namd.sh --show            # 看现有配置 + 推荐命令
+bash bench_namd.sh --print single    # 只打印一条可直接粘贴的 NAMD 命令
+bash bench_namd.sh --retest          # 换机器 / 想复核 / 驱动变了 → 重测（旧配置自动备份）
+bash bench_namd.sh --env             # 只看环境探测（CPU/内存/GPU/NAMD/VMD/Python），不跑基准
 ```
 
-### NAMD 运行规矩（重要）
+- 结果写进**全局记忆** `~/.config/md-master/machine.conf`（纯 `key=value`，可被 source）；
+  全库脚本自动读它 —— **第一次测过之后不用每次都测**。
+- 自检给出三件事：单进程命令（`+p` 多少、要不要 `+setcpuaffinity`）、并发路数×线程数
+  （US 多窗口用）、分析脚本的并发 VMD 数（按内存缩放）。
+- 原理：拿示例模型 `models/cnt_crown/1model/system_ion.*`（23045 原子、盒子从 PDB 的
+  `CRYST1` 自动读）在各档参数下跑 5000 步，比较 NAMD 日志里的 `PERFORMANCE: ... ns/day`。
+  **全程在 `mktemp -d` 临时目录里跑**，不写项目目录、不碰任何现存 conf。
+- **没有可用 GPU 时直接报错退出、且不写配置**（CUDA 版 NAMD 离不开 `/dev/nvidia*`，见 §8 第 9 条）；
+  如果手上是 multicore（非 CUDA）版 NAMD，用 `bash bench_namd.sh --cpu-only`。
+- 换机器 / 换同事接手：跑一次 `bench_namd.sh` 就够，**不用改任何 conf 或脚本**。
 
-- **两个 NAMD 都是 CUDA 编译版**：必须有 GPU 设备节点（`/dev/nvidia*`）才能启动，
-  否则 `FATAL ERROR: CUDA error cudaGetDeviceCount` 段错误。
-- **标准命令**（本机实测最优，+p40 以上急剧恶化，别开满 52 核）：
+### 0.2 软件路径（脚本自动探测，也可用环境变量覆盖）
+
+| 软件 | 探测顺序 |
+|---|---|
+| VMD | `$VMD` → `PATH` 里的 `vmd` → `/usr/local/bin/vmd` |
+| NAMD 3.0.1（推荐）/ NAMD 2.14 | `$NAMD` → `PATH` 里的 `namd3`/`namd2` → `~/Install/Namd/*/namd3` → `/opt`、`/usr/local/bin` |
+| Python（分析 / 绘图 / WHAM） | `$PYTHON` → conda `MD` 环境 → `$CONDA_PREFIX/bin/python` → `PATH` 里的 `python3`（要求能 `import numpy`） |
+
+- 实际取到的值都记在 `machine.conf`（`NAMD=` / `VMD=` / `PYTHON=`），`--show` 可见。
+- 分析环境示例：`conda activate MD`，或直接用 `machine.conf` 里 `PYTHON` 的绝对路径。
+
+### 0.3 NAMD 运行规矩（重要）
+
+- **CUDA 编译版 NAMD 必须有 GPU 设备节点**（`/dev/nvidia*`）才能启动，否则
+  `FATAL ERROR: CUDA error cudaGetDeviceCount` 段错误。
+- **命令长这样**（并行参数用自检结果替换，`--print single` 可以直接抄）：
   ```bash
   cd 某目录 && namd3 +p32 +setcpuaffinity +devices 0 xxx.conf > xxx.log 2>&1
   ```
-- 多进程并发（自由能 US 多窗口）**严禁 `+setcpuaffinity`**（会全钉到 CPU0，吞吐暴跌 50 倍），
+- 多进程并发（自由能 US 多窗口）**严禁 `+setcpuaffinity`**（会全钉到 CPU0，吞吐暴跌几十倍），
   只有单窗口顺序跑才用绑核。见 `free_energy/us/run_all.sh` 头注释。
 - **NAMD 3 已弃用 `CUDASOAintegrate`**；检测到 GPU 自动启用 GPU-resident。
   `CUDASOAintegrate on` 只应写在 NAMD 2 配置里。
@@ -87,8 +112,9 @@ MD 起点都在这里：`system_ion.psf/pdb`（溶剂化+离子）、`cnt_restra
 - `parameters` → `../forcefield/*`
 
 ```bash
+bash bench_namd.sh                            # ★ 首次：先测出本机最优并行参数（一次即可）
 python3 0build/check_setup.py                 # ★ 先静态校验，全 PASS 再跑
-cd 2min && namd3 +p32 +setcpuaffinity +devices 0 min.conf > min.log 2>&1
+cd 2min && namd3 +p32 +setcpuaffinity +devices 0 min.conf > min.log 2>&1   # 参数按自检结果
 grep "PERIODIC CELL CENTER" min.log           # ★ 确认盒子中心对不对
 cd ../3eq && namd3 +p32 +setcpuaffinity +devices 0 eq.conf > eq.log 2>&1
 ```
@@ -109,7 +135,7 @@ tclForcesScript  field_axial_tri.tcl
 4. **改完先离线自检**：`tclsh selftest_field.tcl ../3eq/eq.restart.xsc`。
 
 ```bash
-cd 4prod && nohup namd3 +p32 +setcpuaffinity +devices 0 prod.conf > prod.log 2>&1 &
+cd 4prod && nohup namd3 +p32 +setcpuaffinity +devices 0 prod.conf > prod.log 2>&1 &   # 参数按自检结果
 ```
 
 **prod.conf 两条禁忌**：
@@ -160,8 +186,8 @@ cd ../pmf && ./run_wham.sh && python plot_pmf.py
 
 ```bash
 bash analysis/calCurr.sh 2 100                 # 先试跑
-nohup bash analysis/calCurr.sh 16 10000 &      # 正式并行
-conda activate MD
+nohup bash analysis/calCurr.sh 16 10000 &      # 正式并行（进程数看 machine.conf 的 ANALYSIS_JOBS）
+conda activate MD                              # 分析环境示例（按机器改）
 python analysis/plot_iv.py
 python analysis/plot_currents.py
 python analysis/plot_concentration.py
@@ -180,7 +206,9 @@ python analysis/plot_concentration.py
 3. **B 字段文件必须与结构原子数、顺序完全一致**（`cnt_restrain.pdb`/`cnt_langevin.pdb`），
    用未溶剂化模型生成会导致 NAMD 拒绝读取。
 4. **PDB 原子名对齐到标准列（第 14 列）**，左对齐会让部分工具误读元素。
-5. **NAMD 是 CUDA 版**：无 GPU 节点直接段错误，`+p32 +setcpuaffinity +devices 0` 是实测最优。
+5. **NAMD 是 CUDA 版**：无 GPU 节点直接段错误。并行参数（`+p` 多少、要不要
+   `+setcpuaffinity`、并发几路）**必须用 `bench_namd.sh` 在本机实测**，别照抄文档里的
+   `+p32` —— 那只是开发机数值，换机器可能差十倍甚至假死（见 §0.1）。
 6. **NAMD 3 别写 `stepsPerCycle` / `CUDASOAintegrate`**（见 §5）。
 7. **用 `binvelocities` 续跑时，绝不能再写 `temperature`**。
    两者同时存在 NAMD 直接 `FATAL ERROR: Cannot specify both an initial temperature
@@ -218,7 +246,7 @@ python analysis/plot_concentration.py
 - **势垒必须落在孔心（z≈0）**：反应坐标是"离子 vs 孔环 6 个氧的质心"的 Z 差，
   势垒峰应落在 z=0 且左右大致对称。**峰位明显偏离 0（例如 -0.11）通常说明峰顶没采到**，
   是窗口清单漏了孔心窗口的典型症状（见 §8 第 8 条），不是物理效应。
-- 数据盘 `/mnt/data2` 已用 96%，单条 20 ns 轨迹（2.3 万原子 1 万帧）约 2.8 GB，注意清理。
+- 轨迹文件很占地方：单条 20 ns 轨迹（2.3 万原子、1 万帧）约 2.8 GB，跑完注意清理/转存。
 
 ---
 
@@ -235,7 +263,8 @@ python analysis/plot_concentration.py
 | SMD 从平衡产物续跑却从头开始 / 能量突变 | 漏了 `bincoordinates`/`binvelocities`/`extendedSystem` 三行，或 `eq.conf` 没先跑；看 `eq_output.*` 在不在 |
 | PMF 在势垒顶部出现 `NaN` 空洞、峰位偏离 z=0 | 窗口清单漏了势垒中心窗口；补 `z=0.00` 后重算 WHAM（不用重跑旧窗口，只有新窗口要跑）（§8 第 8 条） |
 | PMF 曲线在窗口间距处周期性"锯齿"或空洞 | 相邻窗口 Δz 远大于 σ=√(RT/k)，直方图没重叠；加密窗口或统一弹簧常数（§6 与 `us/windows.txt` 顶部规则） |
-| 多窗口 US 并发吞吐暴跌 | 多进程用了 `+setcpuaffinity`；去掉，单窗口才用绑核 |
+| 多窗口 US 并发吞吐暴跌 | 多进程用了 `+setcpuaffinity`；去掉，单窗口才用绑核（并发参数看 machine.conf） |
+| 脚本提示"未找到机器配置" | 这台机器还没自检：跑 `bash bench_namd.sh`（一次即可，之后全局记忆） |
 | `import field_protocol` 失败 | `analysis/` 里漏了 `field_protocol.py`（公共依赖） |
 | 电流算出"管内贫化" | 用 r<13 当管内了；改柱心 r<9 vs 本体 r>22 |
 
@@ -245,9 +274,12 @@ python analysis/plot_concentration.py
 
 ```bash
 # 新建项目
-bash new_project.sh /mnt/data2/.../新项目 --with-prod --with-analysis
+bash new_project.sh /path/to/新项目 --with-prod --with-analysis
 
-# 跑 MD（NAMD 由你在终端启动）
+# 首次自检（只跑一次，结果全局记忆；换机器再来一次）
+bash bench_namd.sh && bash bench_namd.sh --print single
+
+# 跑 MD（NAMD 由你在终端启动；+p 与绑核按自检结果）
 python3 0build/check_setup.py
 cd 2min  && namd3 +p32 +setcpuaffinity +devices 0 min.conf  > min.log  2>&1
 cd ../3eq && namd3 +p32 +setcpuaffinity +devices 0 eq.conf   > eq.log   2>&1
@@ -263,7 +295,7 @@ cd ../extract && ./run_extract.sh && cd ../us && ./setup_us.sh && ./run_all.sh
 cd ../pmf && ./run_wham.sh && python plot_pmf.py
 
 # 分析
-conda activate MD
+conda activate MD                              # 分析环境示例，按机器改
 bash analysis/calCurr.sh 16 10000 && python analysis/plot_iv.py
 ```
 

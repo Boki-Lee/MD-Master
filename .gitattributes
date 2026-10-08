@@ -1,0 +1,8 @@
+# 仓库内统一 LF 行尾：本库脚本跑在 Linux/macOS 上，CRLF 会让 shebang 失效
+* text=auto eol=lf
+
+# 纯二进制，别做行尾转换
+*.png  binary
+*.jpg  binary
+*.zip  binary
+*.dcd  binary

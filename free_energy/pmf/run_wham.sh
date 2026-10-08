@@ -6,7 +6,19 @@
 set -e
 cd "$(dirname "$0")"
 
-PYTHON="${PYTHON:-/home/dell/anaconda3/envs/MD/bin/python}"
+# ---- 机器自适应配置（首次使用：bash bench_namd.sh）----
+CONF="${MD_MASTER_MACHINE_CONF:-${XDG_CONFIG_HOME:-$HOME/.config}/md-master/machine.conf}"
+if [ -r "$CONF" ]; then
+    . "$CONF"
+else
+    echo "⚠ 未找到机器配置 $CONF —— 首次使用请先跑 bash bench_namd.sh（本次自动探测 python）" >&2
+    [ "${MD_MASTER_STRICT:-0}" = "1" ] && { echo "MD_MASTER_STRICT=1，退出"; exit 1; }
+fi
+PYTHON="${PYTHON:-$(command -v python3 || true)}"
+if [ -n "$PYTHON" ] && ! "$PYTHON" -c 'import numpy' >/dev/null 2>&1; then
+    echo "⚠ $PYTHON 缺 numpy，WHAM 会失败（换机器时用 PYTHON=/path/to/python 指定分析环境）" >&2
+fi
+[ -n "$PYTHON" ] || { echo "ERROR: 找不到 python3（设 PYTHON=...，或先跑 bench_namd.sh）" >&2; exit 1; }
 EQUIL_STEPS="${EQUIL_STEPS:-250000}"
 
 rm -f metadata.txt data_*.txt

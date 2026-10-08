@@ -49,7 +49,7 @@ bash logs/log_change.sh <类型> <摘要> [--files "文件1,文件2"] [--source 
 # 归档一条
 bash logs/log_change.sh 归档 "CNT1 收成 models/cnt_crown_v2" \
      --files "models/cnt_crown_v2/README.md,README.md,new_project.sh" \
-     --source "/mnt/data2/lbj/CNT/CNT1" \
+     --source "/path/to/project" \
      --note "改 conf 相对路径；未收 dcd/coor/vel"
 
 # 直接改库一条

@@ -78,11 +78,13 @@ cd ../pmf && ./run_wham.sh && python plot_pmf.py
 - **`smd/` 的平衡阶段（`eq.conf`）是相对老做法的改进**：老做法把 `minimize 5000`
   写在 `smd.conf` 开头，最小化完立刻以几 Å/ns 往外拉。窄量程（±5 Å）时最外端窗口
   就落在 SMD 起点附近，而它往往正是 PMF 的零点参考，水没松弛会直接污染基线。
-  代价很小（2 万原子 1 ns NVT 在 4090 上约 7 分钟），所以默认保留。
+  代价很小（2 万原子体系 1 ns NVT 约几到十几分钟，取决于 GPU），所以默认保留。
 - **续跑时的关键约束**：`smd.conf` 用了 `binvelocities`，就**不能再写 `temperature`**
   （NAMD 会 `FATAL ERROR: Cannot specify both an initial temperature and a velocity file`）；
   恒温靠 `langevin` + `langevinTemp`。这是改两步走时必踩的一步，见顶层 `WORKFLOW.md` §8。
 - WHAM 用自实现 `wham.py`（仅 numpy）；要严格误差棒建议装 PyMBAR
   （`conda install --override-channels -c conda-forge pymbar`）。
-- 多窗口并发：`us/run_all.sh` 默认 3 并发 × `+p16`（无绑核）；只有单窗口顺序跑
-  （`MAX_JOBS=1`）才用 `+p32 +setcpuaffinity`。详见 `run_all.sh` 头注释与顶层 `WORKFLOW.md`。
+- 多窗口并发：并发路数与线程数默认来自**全局机器记忆**
+  （首次使用跑 `bash bench_namd.sh` 实测，见顶层 `WORKFLOW.md` §0.1），
+  可用 `MAX_JOBS=` / `NTHREADS=` 临时覆盖。**并发时一律不加 `+setcpuaffinity`**，
+  只有单窗口顺序跑（`MAX_JOBS=1`）才用绑核。详见 `run_all.sh` 头注释。

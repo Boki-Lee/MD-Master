@@ -86,17 +86,17 @@ bash logs/log_change.sh 归档 "<一句话摘要，例：CNT1 收成 models/cnt_
 
 ### 例 1：把某个项目的径向力脚本归档到 `forces/`
 
-1. 第 1 步 → 用户答 B（新自定义力），项目路径 `/mnt/data2/lbj/CNT/CNT1`。
+1. 第 1 步 → 用户答 B（新自定义力），项目路径 `/path/to/project`。
 2. 第 2 步 → 复制 `4prod/field_xxx.tcl` → `forces/field_xxx.tcl`；改里面 `../ion_ids.dat` 等路径为新结构。
 3. 第 3 步 → `forces/README.md` 文件清单表加一行，写清用途/参数。
 4. 第 4 步 → 顶层 `README.md` 的 `forces/` 条目加一行；`new_project.sh` 无需改（`*.tcl` 通配）。
 5. 第 5 步 → `chmod 644`（.tcl 由 namd3 读，不需执行位）；`tclsh` 跑 selftest。
 6. 第 6 步 → 确认。
-7. 第 7 步 → `bash logs/log_change.sh 归档 "..." --files "forces/field_xxx.tcl,forces/README.md,README.md" --source /mnt/data2/lbj/CNT/CNT1`。
+7. 第 7 步 → `bash logs/log_change.sh 归档 "..." --files "forces/field_xxx.tcl,forces/README.md,README.md" --source /path/to/project`。
 
 ### 例 2：归档一个跑完的项目为新模型
 
-1. 第 1 步 → 用户答 A，项目 `/mnt/data2/.../proj`。
+1. 第 1 步 → 用户答 A，项目 `/path/to/proj`。
 2. 第 2 步 → 建 `models/<name>/`，复制 `0build/*.tcl/.sh/.py`、`1model/*.psf/pdb + ion_ids.dat + system_solv.log`、
    `2min/min.conf`、`3eq/eq.conf`；**不复制 dcd/coor/vel**；改 conf 相对路径。
 3. 第 3 步 → 写 `models/<name>/README.md`（参数表 + 相对路径约定）。

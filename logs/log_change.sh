@@ -11,7 +11,7 @@
 # 例：
 #   bash logs/log_change.sh 归档 "CNT1 收成 models/cnt_crown_v2" \
 #        --files "models/cnt_crown_v2/README.md,README.md" \
-#        --source /mnt/data2/lbj/CNT/CNT1
+#        --source /path/to/project
 # ---------------------------------------------------------------------------
 set -euo pipefail
 

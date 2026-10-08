@@ -16,18 +16,33 @@
 #  SKIP_EQ=1 可强制跳过（用于严格对齐"不做独立平衡"的老跑法）。
 #
 #  用法：
-#      ./run_smd.sh                  # 默认 +p32 +setcpuaffinity（单进程顺序跑，绑核 +29%）
-#      NTHREADS=16 ./run_smd.sh      # 降线程
+#      ./run_smd.sh                  # 线程数/绑核读全局机器记忆 machine.conf（首次先跑 bench_namd.sh）
+#      NTHREADS=16 ./run_smd.sh      # 手动降线程
 #      SKIP_EQ=1 ./run_smd.sh        # 不跑平衡（需已有 eq_output.*）
+#      DRY_RUN=1 ./run_smd.sh        # 只打印将要执行的命令，不真跑
 #
-#  注意：本机 NAMD 是 CUDA 编译版，必须有 /dev/nvidia* 才能起。
-#        多进程并发时才严禁 +setcpuaffinity；这里是单进程顺序跑，绑核是安全的。
+#  注意：NAMD 是 CUDA 编译版，必须有 /dev/nvidia* 才能起。
+#        多进程并发时才严禁 +setcpuaffinity；这里是单进程顺序跑，绑核一般更快
+#        （到底快不快，由 bench_namd.sh 在本机实测后写进 machine.conf）。
 # ============================================================
 set -e
 cd "$(dirname "$0")"
 
-NAMD="${NAMD:-/home/dell/Install/Namd/NAMD_3.0.1_Linux-x86_64-multicore-CUDA/namd3}"
-NTHREADS="${NTHREADS:-32}"
+# ---- 机器自适应配置（首次使用：bash bench_namd.sh）----
+CONF="${MD_MASTER_MACHINE_CONF:-${XDG_CONFIG_HOME:-$HOME/.config}/md-master/machine.conf}"
+if [ -r "$CONF" ]; then
+    . "$CONF"
+else
+    echo "⚠ 未找到机器配置 $CONF —— 首次使用请先跑 bash bench_namd.sh（本次用保守默认值）" >&2
+    [ "${MD_MASTER_STRICT:-0}" = "1" ] && { echo "MD_MASTER_STRICT=1，退出"; exit 1; }
+fi
+
+NAMD="${NAMD:-$(command -v namd3 || command -v namd2 || true)}"
+NTHREADS="${NTHREADS:-${SINGLE_NTHREADS:-8}}"
+AFFINITY="${AFFINITY:-${SINGLE_AFFINITY:-}}"
+DEVICES="${DEVICES:-0}"
+
+[ -n "$NAMD" ] || { echo "ERROR: 找不到 namd3/namd2（设 NAMD=/path/to/namd3，或先跑 bench_namd.sh）" >&2; exit 1; }
 
 if [ ! -f ../1model/ion_index.dat ] || [ ! -f ../1model/ox_indices.dat ]; then
     echo "ERROR: 先跑 0build（cd ../0build && ./run_build_us.sh）生成 ion_index.dat / ox_indices.dat"
@@ -49,7 +64,9 @@ else
     echo ">> [1/2] minimize + 1 ns NVT equilibration ..."
     # 清掉上一次没跑完的残留，避免读到半截文件
     rm -f eq_output.coor eq_output.vel eq_output.xsc eq_output.dcd eq_output.xst
-    if ! $NAMD +p$NTHREADS +setcpuaffinity +devices 0 eq.conf > eq.log 2>&1; then
+    if [ "${DRY_RUN:-0}" = "1" ]; then
+        echo "   [dry-run] $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES eq.conf > eq.log 2>&1"
+    elif ! $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES eq.conf > eq.log 2>&1; then
         echo "ERROR: 平衡阶段失败，eq.log 末尾："
         tail -20 eq.log
         exit 1
@@ -71,7 +88,9 @@ fi
 
 # ---------------- 第 2 步：SMD 拉伸 ----------------
 echo ">> [2/2] SMD pulling (1 ns, ion from +12 A outside to -6 A inside) ..."
-if ! $NAMD +p$NTHREADS +setcpuaffinity +devices 0 smd.conf > smd.log 2>&1; then
+if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "   [dry-run] $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES smd.conf > smd.log 2>&1"
+elif ! $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES smd.conf > smd.log 2>&1; then
     echo "ERROR: SMD 失败，smd.log 末尾："
     tail -20 smd.log
     exit 1
