@@ -91,6 +91,10 @@ MD-Master/
 
 > `free_energy/` 里的 `smd/extract/us/pmf` 是**步骤 5 的子步骤**，不是顶层编号。
 > 自由能建模复用 `models/<name>/0build` 与 `1model`（同一套建模，不另开目录）。
+> `new_project.sh --with-free-energy` 生成的项目里，这四个目录会带上步骤号
+> （`2smd/3extract/4us/5pmf`，与 `2min/3eq/4prod` 对齐看），脚本内部的兄弟目录引用
+> （`../smd/` 等）会自动改写并自检；只加 `--with-free-energy` 时**不建空的 `2min/3eq`**
+> —— 自由能分支的最小化+平衡就在 `2smd/eq.conf` 里。
 
 ---
 

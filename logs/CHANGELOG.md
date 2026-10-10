@@ -128,3 +128,49 @@ README/SKILL/AGENTS 增加首次自检流程与铁律、new_project.sh 模板命
   - logs/CHANGELOG.md
 - **说明**：
   只更正计数，不影响改动内容；CHANGELOG 只增不改，故追加而非修改旧条目。
+
+## 2026-10-10 15:05:16 +0800 — [修改] 同步上游改动（v1.3.0）：new_project.sh 自由能目录带步骤号 + FE 分支不建空 2min/3eq；US 窗口清单规则②更新（混用弹簧需验算接头重叠）；新增版本号铁律
+
+- **时间**：2026-10-10 15:05:16 +0800
+- **类型**：修改
+- **来源项目**：/home/dell/LBJ/WORKFLOW
+- **改动文件**：
+  - new_project.sh
+  - free_energy/us/windows.txt
+  - free_energy/us/windows_bulk_to_tube.txt
+  - README.md
+  - free_energy/README.md
+  - WORKFLOW.md
+  - AGENTS.md
+  - VERSION
+- **说明**：
+  同步上游（../WORKFLOW）2026-10-10 的改动，版本 v1.3.0（原 0.1.0）。
+① new_project.sh 以上游新版为基线合并：只加 --with-free-energy 时不建空的 2min/3eq
+（自由能分支的最小化+平衡本来就在 smd/eq.conf 里，空目录会让人以为漏跑步骤），
+并在生成的项目里把自由能四目录改成带步骤号的 2smd/3extract/4us/5pmf，同时用 python
+精确改写脚本内部对兄弟目录的引用（../smd/→../2smd/、../us/→../4us/ 等；只认这 4 个
+目录名且前面不是数字/字母/下划线，所以 2smd/ 不会被再编号、status/ 里的 us/ 不会误伤），
+改完自检每个 ../xxx/ 是否都指到已建目录；usage() 改用 awk 打印头部注释不写死行号。
+我方可移植化改动（参考库来源去本机化、复制 bench_namd.sh + machine.conf.example、
+TODO 模板改为先自检 + 并行参数走 machine.conf）已合并进这个新基线，并顺手把
+TODO 里「完整说明见参考库 /home/dell/LBJ/WORKFLOW/WORKFLOW.md」也去掉本机路径。
+② free_energy/us/windows.txt 规则②重写：从「弹簧常数必须统一」改为「混用弹簧可以，
+但每个接头都要验算重叠」，附 CNT5 2026-10-10 实测反例（孔区 k=50 接体相 k=10、间距
+1.0 Å 时空隙区每 0.01 Å bin 只剩 1.6 个样本、约 40% 概率冒 NaN；改 k=5 + 间距 1.5 Å
+后最薄接头 9.4 样本/bin，5 个窗口即覆盖 +6~+12）。③ windows_bulk_to_tube.txt 的
+「已知脆弱点」补上同一条实测教训。④ 文档一致性：README.md、free_energy/README.md、
+WORKFLOW.md 都注明「生成的项目里自由能目录带步骤号、FE 分支不建空 2min/3eq」。
+⑤ 新增 §7 版本号铁律：动手改库前先问用户「这次改到 v几.几.几」，收尾更新 VERSION +
+写台账 + 提醒发 Release。⑥ 上游 logs/CHANGELOG.md 不复制（库内台账各记各的）。
+
+## 2026-10-10 15:08:55 +0800 — [修复] v1.3.0 收尾修补：并行参数在「不绑核」时命令行多出的双空格；new_project.sh 改名器判据泛化（去掉写死的 /mnt/share）
+
+- **时间**：2026-10-10 15:08:55 +0800
+- **类型**：修复
+- **改动文件**：
+  - bench_namd.sh
+  - free_energy/us/run_all.sh
+  - free_energy/smd/run_smd.sh
+  - new_project.sh
+- **说明**：
+  ① bench_namd.sh / us/run_all.sh / smd/run_smd.sh 里 $AFFINITY 为空时会输出 "+p16  +devices 0"（双空格），改成 ${AFFINITY:+ $AFFINITY} 形式；这是用户会照着抄的命令，顺手清干净。② new_project.sh 的兄弟目录引用改写器原用 "if '/mnt/share' in line" 跳过外部历史路径注释，属上游写死的外来路径；改成通用判断「行内出现绝对路径即整行跳过」，对现有模板的改写结果完全不变（实测 5 文件 10 行、自检通过），但库里不再残留任何本机/外来路径。两条都属于 v1.3.0 批次内的收尾打磨。

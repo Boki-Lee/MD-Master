@@ -7,6 +7,10 @@
 > `build_us_system.tcl`（旋转目标孔 + 溶剂化 + 加离子）放在
 > `models/<name>/0build/` 里，产物写进 `models/<name>/1model/`，
 > 与标准建模共用目录，不另设 `1model_us` 或 `5free`。
+>
+> 库里这 4 个目录**不编号**（它们是步骤 5 的子步骤）；`new_project.sh --with-free-energy`
+> 生成的项目里会带上步骤号 `2smd/3extract/4us/5pmf`，并自动改写脚本内部的兄弟目录
+> 引用（`../smd/`→`../2smd/`、`../us/`→`../4us/` 等），拿出来直接能用，不必手改路径。
 
 ## 子步骤与文件
 

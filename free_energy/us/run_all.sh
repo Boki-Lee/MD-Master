@@ -61,10 +61,10 @@ while read -r z k; do
           "us_${win}.xsc" "us_${win}.xst" "us_${win}.coor" "us_${win}.log" 2>/dev/null
 
     if [ "${DRY_RUN:-0}" = "1" ]; then
-        echo "   [dry-run] $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES us_${win}.conf > us_${win}.log 2>&1 &"
+        echo "   [dry-run] $NAMD +p$NTHREADS${AFFINITY:+ $AFFINITY} +devices $DEVICES us_${win}.conf > us_${win}.log 2>&1 &"
     else
         echo ">> 后台提交窗口 Z = $win"
-        nohup $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES us_${win}.conf > us_${win}.log 2>&1 &
+        nohup $NAMD +p$NTHREADS${AFFINITY:+ $AFFINITY} +devices $DEVICES us_${win}.conf > us_${win}.log 2>&1 &
     fi
 
     count=$((count+1))

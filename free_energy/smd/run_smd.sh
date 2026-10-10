@@ -65,8 +65,8 @@ else
     # 清掉上一次没跑完的残留，避免读到半截文件
     rm -f eq_output.coor eq_output.vel eq_output.xsc eq_output.dcd eq_output.xst
     if [ "${DRY_RUN:-0}" = "1" ]; then
-        echo "   [dry-run] $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES eq.conf > eq.log 2>&1"
-    elif ! $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES eq.conf > eq.log 2>&1; then
+        echo "   [dry-run] $NAMD +p$NTHREADS${AFFINITY:+ $AFFINITY} +devices $DEVICES eq.conf > eq.log 2>&1"
+    elif ! $NAMD +p$NTHREADS${AFFINITY:+ $AFFINITY} +devices $DEVICES eq.conf > eq.log 2>&1; then
         echo "ERROR: 平衡阶段失败，eq.log 末尾："
         tail -20 eq.log
         exit 1
@@ -89,8 +89,8 @@ fi
 # ---------------- 第 2 步：SMD 拉伸 ----------------
 echo ">> [2/2] SMD pulling (1 ns, ion from +12 A outside to -6 A inside) ..."
 if [ "${DRY_RUN:-0}" = "1" ]; then
-    echo "   [dry-run] $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES smd.conf > smd.log 2>&1"
-elif ! $NAMD +p$NTHREADS $AFFINITY +devices $DEVICES smd.conf > smd.log 2>&1; then
+    echo "   [dry-run] $NAMD +p$NTHREADS${AFFINITY:+ $AFFINITY} +devices $DEVICES smd.conf > smd.log 2>&1"
+elif ! $NAMD +p$NTHREADS${AFFINITY:+ $AFFINITY} +devices $DEVICES smd.conf > smd.log 2>&1; then
     echo "ERROR: SMD 失败，smd.log 末尾："
     tail -20 smd.log
     exit 1

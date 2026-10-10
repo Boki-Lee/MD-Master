@@ -305,7 +305,7 @@ run_jobs() {
     local t0 t1
     t0="$(date +%s.%N)"
     for ((i=0; i<njobs; i++)); do
-        ( cd "${dirs[$i]}" && timeout "$TMO" "$NAMD" +p"$nt" $aff +devices "$DEVICES_ARG" \
+        ( cd "${dirs[$i]}" && timeout "$TMO" "$NAMD" +p"$nt"${aff:+ $aff} +devices "$DEVICES_ARG" \
               bench.conf > bench.log 2>&1 ) &
         pids+=($!)
     done
@@ -390,12 +390,12 @@ print_cmds() {
     cj="${CONC_MAX_JOBS:-1}";   cnt="${CONC_NTHREADS:-$nt}"
     case "$what" in
         single)
-            printf '%s +p%s %s +devices %s\n' "${NAMD:-namd3}" "$nt" "$aff" "$dev" ;;
+            printf '%s +p%s%s +devices %s\n' "${NAMD:-namd3}" "$nt" "${aff:+ $aff}" "$dev" ;;
         conc)
             printf 'MAX_JOBS=%s NTHREADS=%s   # 并发时严禁 +setcpuaffinity\n' "$cj" "$cnt" ;;
         all|*)
             say "# 单进程顺序跑（min / eq / prod / smd）："
-            printf '  %s +p%s %s +devices %s xxx.conf > xxx.log 2>&1\n' "${NAMD:-namd3}" "$nt" "$aff" "$dev"
+            printf '  %s +p%s%s +devices %s xxx.conf > xxx.log 2>&1\n' "${NAMD:-namd3}" "$nt" "${aff:+ $aff}" "$dev"
             say "# 多窗口并发（US）："
             printf '  MAX_JOBS=%s NTHREADS=%s ./run_all.sh\n' "$cj" "$cnt"
             say "# 分析脚本并发（VMD 数，取决于内存）："

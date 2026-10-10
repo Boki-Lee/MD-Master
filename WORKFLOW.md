@@ -72,6 +72,12 @@ bash bench_namd.sh --env             # 只看环境探测（CPU/内存/GPU/NAMD/
 └── analysis/     ⑥ 分析脚本
 ```
 
+> `new_project.sh --with-free-energy` 生成的项目里，自由能四目录带**步骤号**
+> （`2smd/3extract/4us/5pmf`），以便和 `2min/3eq/4prod` 对齐；库里模板保持不编号
+> （自由能四步视为步骤 5 的子步骤）。生成时脚本内部对兄弟目录的引用会自动改写。
+> 只加 `--with-free-energy` 的项目**不建空的 `2min/3eq`**：最小化+平衡在 `2smd/eq.conf` 里，
+> `2smd/eq_output.coor/.vel/.xsc` 就是交给 SMD 的交接件。
+
 **跨文件夹相对路径**（conf/脚本里就写这些）：
 
 | 文件 | 引用 |
